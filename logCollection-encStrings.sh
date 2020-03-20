@@ -48,7 +48,7 @@
 ## User Variables
 jamfProURL="$4"
 jamfProUser="$5"
-jamfProPass="$6"
+jamfProPassEnc="$6"
 logFiles="$7"
 
 ## System Variables
@@ -56,6 +56,7 @@ mySerial=$( system_profiler SPHardwareDataType | grep Serial |  awk '{print $NF}
 currentUser=$( stat -f%Su /dev/console )
 compHostName=$( scutil --get LocalHostName )
 timeStamp=$( date '+%Y-%m-%d-%H-%M-%S' )
+jamfProPass=$(echo "$6" | /usr/bin/openssl enc -aes256 -d -a -A -S "$8" -k "$9")
 
 ## Log Collection
 fileName=$compHostName-$currentUser-$timeStamp.zip
