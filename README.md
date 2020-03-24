@@ -1,30 +1,15 @@
-# logCollection
-*Script to upload client device logs to Jamf Pro*
+<div align="center">
 
-**Please Note:** Once you've downloaded the compressed logs from Jamf Pro, you should **delete** them from the inventory record. These attachments live in the database and as always, we want to keep the database as lean and clean as possible. :)
+![Icon made by iconixar from flaticon.com](https://kc9wwh-media.s3.us-east-2.amazonaws.com/logCollection/media/logCollection_Banner-sm.png "logCollection")
 
----
+## Download Latest Version
+[logCollection.sh](https://github.com/kc9wwh/logCollection/blob/master/logCollection.sh)
 
-Simple script that can be used via Self Service and/or via Policy to grab logs from a Mac and attach them to the computer record in Jamf Pro. No user interaction is required for this script so it can be run silently behind the scenes if you choose.
+[logCollection.sh w/ EncryptedStrings built-in](https://github.com/kc9wwh/logCollection/blob/master/logCollection-encStrings.sh)
 
-![alt text](https://kc9wwh-media.s3.us-east-2.amazonaws.com/logCollection/media/SSDescription.png "Self Service Description")
+## Questions on Implementation?
+Check out the [Wiki](https://github.com/kc9wwh/logCollection/wiki) for guides on how to setup and configure for your environment!
 
-By default, the following log files are grabbed:
-- /var/log/jamf.log
-- /var/log/install.log (and all rollovers)
-- /var/log/system.log (and all rollovers)
+If you have issues after that, please open an [issue](https://github.com/kc9wwh/logCollection/issues/new/choose).
 
-...the logs are then compressed and uploaded to Jamf Pro on the device record under Attachments. 
-
-![alt text](https://kc9wwh-media.s3.us-east-2.amazonaws.com/logCollection/media/LogsOnDeviceRecord.png "Example of Logs Attached to Inventory Record")
-
-I'd recommend using the [Encrypted Strings](https://github.com/jamf/Encrypted-Script-Parameters) version (logCollection-encStrings.sh) included in this repo. This will ensure you API User account password remains secure both in transit and on the device.  
-
-![alt text](https://kc9wwh-media.s3.us-east-2.amazonaws.com/logCollection/media/ScriptLabels.png "Script Labels")
-
-![alt text](https://kc9wwh-media.s3.us-east-2.amazonaws.com/logCollection/media/ScriptParameters.png "Script Parameters")
-
-
-If you have suggestions or questions, please open an issue.
-
-~Josh
+</div>
