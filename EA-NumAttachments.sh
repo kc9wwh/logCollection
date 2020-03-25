@@ -5,8 +5,8 @@ jamfProUser="apiuser-logcollection"
 jamfProPass="apiuserpassword"
 
 ## Grab local serial number
-#mySerial=$( system_profiler SPHardwareDataType | grep Serial |  awk '{print $NF}' )
-mySerial="V02ZPQEZB3GN"
+mySerial=$( system_profiler SPHardwareDataType | grep Serial |  awk '{print $NF}' )
+
 ## Determine Jamf Pro Device ID
 jamfProID=$( curl -k -u $jamfProUser:$jamfProPass $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath "//computer/general/id/text()" )
 
