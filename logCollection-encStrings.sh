@@ -43,6 +43,10 @@
 #
 # Written by: Joshua Roskos | Jamf
 #
+#
+# Revision History
+# 2020-12-01: Added support for macOS Big Sur
+#
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 ## User Variables
@@ -63,8 +67,13 @@ fileName=$compHostName-$currentUser-$timeStamp.zip
 zip /private/tmp/$fileName $logFiles
 
 ## Upload Log File
-jamfProID=$( curl -k -u $jamfProUser:$jamfProPass $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath "//computer/general/id/text()" )
-curl -k -u $jamfProUser:$jamfProPass $jamfProURL/JSSResource/fileuploads/computers/id/$jamfProID -F name=@/private/tmp/$fileName -X POST
+if [[ "$osMajor" -eq 11 ]]; then
+	jamfProID=$( curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath -e "//computer/general/id/text()" )
+elif [[ "$osMajor" -eq 10 && "$osMinor" -gt 12 ]]; then
+    jamfProID=$( curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath "//computer/general/id/text()" )
+fi
+
+curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/fileuploads/computers/id/$jamfProID -F name=@/private/tmp/$fileName -X POST
 
 ## Cleanup
 rm /private/tmp/$fileName
