@@ -46,6 +46,7 @@
 #
 # Revision History
 # 2020-12-01: Added support for macOS Big Sur
+# 2020-12-10: Added Summary Details to Logging
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -75,6 +76,11 @@ elif [[ "$osMajor" -eq 10 && "$osMinor" -gt 12 ]]; then
 fi
 
 curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/fileuploads/computers/id/$jamfProID -F name=@/private/tmp/$fileName -X POST
+upResult="$?"
+
+## Display Logging Information
+printf "\n\n####################\nSummary Details\n\nJamf Pro URL: %s\nLog Files: %s\n\nSerial Number: %s\nCurrent User: %s\nComputer Name: %s\nDate & Time: %s\nmacOS Version: %s.%s\n\nCompressed Logs: %s\nFile Size: %s bytes\n\nJamf Pro ID: %s\nUpload Result: %s\n####################\n\n\n" \
+"$jamfProURL" "$logFiles" "$mySerial" "$currentUser" "$compHostName" "$timeStamp" "$osMajor" "$osMinor" "$fileName" "$(stat -f %z "/private/tmp/$fileName")" "$jamfProID" "$upResult"
 
 ## Cleanup
 rm /private/tmp/$fileName
