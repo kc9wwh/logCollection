@@ -2,7 +2,7 @@
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #
-# Copyright (c) 2020 Jamf.  All rights reserved.
+# Copyright (c) 2021 Jamf.  All rights reserved.
 #
 #       Redistribution and use in source and binary forms, with or without
 #       modification, are permitted provided that the following conditions are met:
@@ -46,6 +46,7 @@
 #
 # Revision History
 # 2020-12-01: Added support for macOS Big Sur
+# 2021-02-24: Fixed missing variables
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -60,7 +61,9 @@ mySerial=$( system_profiler SPHardwareDataType | grep Serial |  awk '{print $NF}
 currentUser=$( stat -f%Su /dev/console )
 compHostName=$( scutil --get LocalHostName )
 timeStamp=$( date '+%Y-%m-%d-%H-%M-%S' )
-jamfProPass=$(echo "$6" | /usr/bin/openssl enc -aes256 -d -a -A -S "$8" -k "$9")
+osMajor=$(/usr/bin/sw_vers -productVersion | awk -F . '{print $1}')
+osMinor=$(/usr/bin/sw_vers -productVersion | awk -F . '{print $2}')
+jamfProPass=$( echo "$6" | /usr/bin/openssl enc -aes256 -d -a -A -S "$8" -k "$9" )
 
 ## Log Collection
 fileName=$compHostName-$currentUser-$timeStamp.zip
@@ -68,7 +71,7 @@ zip /private/tmp/$fileName $logFiles
 
 ## Upload Log File
 if [[ "$osMajor" -eq 11 ]]; then
-	jamfProID=$( curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath -e "//computer/general/id/text()" )
+    jamfProID=$( curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath -e "//computer/general/id/text()" )
 elif [[ "$osMajor" -eq 10 && "$osMinor" -gt 12 ]]; then
     jamfProID=$( curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath "//computer/general/id/text()" )
 fi
