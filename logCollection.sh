@@ -68,7 +68,7 @@ fileName=$compHostName-$currentUser-$timeStamp.zip
 zip /private/tmp/$fileName $logFiles
 
 ## Upload Log File
-if [[ "$osMajor" -eq 11 ]]; then
+if [[ "$osMajor" -ge 11 ]]; then
 	jamfProID=$( curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath -e "//computer/general/id/text()" )
 elif [[ "$osMajor" -eq 10 && "$osMinor" -gt 12 ]]; then
     jamfProID=$( curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath "//computer/general/id/text()" )
