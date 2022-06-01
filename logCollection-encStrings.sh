@@ -48,6 +48,9 @@
 # 2020-12-01: Added support for macOS Big Sur
 # 2021-02-24: Fixed missing variables
 #
+# Modified by: July Flanakin | Jamf
+# 2022-06-01: Added Jamf Connect log collection functionality
+#
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 ## User Variables
@@ -55,6 +58,8 @@ jamfProURL="$4"
 jamfProUser="$5"
 jamfProPassEnc="$6"
 logFiles="$7"
+connect="$10"
+connectDebug="/private/tmp/jamf_login.log"
 
 ## System Variables
 mySerial=$( system_profiler SPHardwareDataType | grep Serial |  awk '{print $NF}' )
@@ -65,9 +70,22 @@ osMajor=$(/usr/bin/sw_vers -productVersion | awk -F . '{print $1}')
 osMinor=$(/usr/bin/sw_vers -productVersion | awk -F . '{print $2}')
 jamfProPass=$( echo "$6" | /usr/bin/openssl enc -aes256 -d -a -A -S "$8" -k "$9" )
 
+## Collect Jamf Connect Logs
+if [[ connect -eq 1 ]];then
+    log show --style compact --predicate ‘subsystem == “com.jamf.connect”’ --debug > /private/tmp/JamfConnect.log
+    connectMenu=/private/tmp/JamfConnect.log
+    log show --style compact --predicate ‘subsystem == “com.jamf.connect.login”’ --debug > /private/tmp/JamfConnectLogin.log
+    connectLogin=/private/tmp/JamfConnectLogin.log
+fi
+
 ## Log Collection
-fileName=$compHostName-$currentUser-$timeStamp.zip
-zip /private/tmp/$fileName $logFiles
+if [[ connect -eq 1 ]];then
+    fileName=$compHostName-$currentUser-$timeStamp.zip
+    zip /private/tmp/$fileName $logFiles $connectDebug $connectMenu $connectLogin
+else
+    fileName=$compHostName-$currentUser-$timeStamp.zip
+    zip /private/tmp/$fileName $logFiles
+fi
 
 ## Upload Log File
 if [[ "$osMajor" -ge 11 ]]; then
@@ -80,4 +98,8 @@ curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/fileuploads/com
 
 ## Cleanup
 rm /private/tmp/$fileName
+if [[ connect -eq 1 ]];then
+    rm /private/tmp/JamfConnect.log
+    rm /private/tmp/JamfConnectLogin.log
+fi
 exit 0
