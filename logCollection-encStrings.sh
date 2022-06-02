@@ -48,6 +48,9 @@
 # 2020-12-01: Added support for macOS Big Sur
 # 2021-02-24: Fixed missing variables
 #
+# Modified by: July Flanakin | Jamf
+# 2022-06-01: Added Bearer Token Functionality
+#
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 ## User Variables
@@ -64,6 +67,10 @@ timeStamp=$( date '+%Y-%m-%d-%H-%M-%S' )
 osMajor=$(/usr/bin/sw_vers -productVersion | awk -F . '{print $1}')
 osMinor=$(/usr/bin/sw_vers -productVersion | awk -F . '{print $2}')
 jamfProPass=$( echo "$6" | /usr/bin/openssl enc -aes256 -d -a -A -S "$8" -k "$9" )
+apiBasicPass=$( printf "$jamfProUser:$jamfProPass" | /usr/bin/iconv -t ISO-8859-1 | /usr/bin/base64 -i - )
+getToken=$( curl -L -X POST $jamfProURL/api/v1/auth/token --header "Authorization: Basic $apiBasicPass" )
+authToken=$(/usr/bin/plutil -extract token raw -o - - <<< "$getToken")
+
 
 ## Log Collection
 fileName=$compHostName-$currentUser-$timeStamp.zip
@@ -71,12 +78,12 @@ zip /private/tmp/$fileName $logFiles
 
 ## Upload Log File
 if [[ "$osMajor" -ge 11 ]]; then
-    jamfProID=$( curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath -e "//computer/general/id/text()" )
+    jamfProID=$( curl -k -L $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general --header 'Content-Type: application/xml' --header "Authorization: Bearer ${authToken}" | xpath -e "//computer/general/id/text()" )
 elif [[ "$osMajor" -eq 10 && "$osMinor" -gt 12 ]]; then
-    jamfProID=$( curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath "//computer/general/id/text()" )
+    jamfProID=$( curl -k -L $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general --header 'Content-Type: application/xml' --header "Authorization: Bearer ${authToken}" | xpath "//computer/general/id/text()" )
 fi
 
-curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/fileuploads/computers/id/$jamfProID -F name=@/private/tmp/$fileName -X POST
+curl -k -L $jamfProURL/JSSResource/fileuploads/computers/id/$jamfProID -F name=@/private/tmp/$fileName -X POST --header 'Accept: application/xml' --header "Authorization: Bearer ${authToken}" 
 
 ## Cleanup
 rm /private/tmp/$fileName
