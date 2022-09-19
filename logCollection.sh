@@ -63,6 +63,11 @@ timeStamp=$( date '+%Y-%m-%d-%H-%M-%S' )
 osMajor=$(/usr/bin/sw_vers -productVersion | awk -F . '{print $1}')
 osMinor=$(/usr/bin/sw_vers -productVersion | awk -F . '{print $2}')
 
+## Get Auth Token
+## Based on: https://developer.jamf.com/jamf-pro/recipes/bearer-token-authorization
+response=$(curl -s -u "$jamfProUser":"$jamfProPass" "$jamfProURL"/api/v1/auth/token -X POST)
+bearerToken=$(echo "$response" | plutil -extract token raw -)
+
 ## Log Collection
 logFiles_arr=(${(@s:,:)logFiles})
 fileName=$compHostName-$currentUser-$timeStamp.zip
@@ -70,12 +75,12 @@ zip /private/tmp/$fileName ${~logFiles_arr[@]}
 
 ## Upload Log File
 if [[ "$osMajor" -ge 11 ]]; then
-	jamfProID=$( curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath -e "//computer/general/id/text()" )
+	jamfProID=$( curl -k -H "Authorization: Bearer ${bearerToken}" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath -e "//computer/general/id/text()" )
 elif [[ "$osMajor" -eq 10 && "$osMinor" -gt 12 ]]; then
-    jamfProID=$( curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath "//computer/general/id/text()" )
+    jamfProID=$( curl -k -H "Authorization: Bearer ${bearerToken}" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath "//computer/general/id/text()" )
 fi
 
-curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/fileuploads/computers/id/$jamfProID -F name=@/private/tmp/$fileName -X POST
+curl -k -H "Authorization: Bearer ${bearerToken}" $jamfProURL/JSSResource/fileuploads/computers/id/$jamfProID -F name=@/private/tmp/$fileName -X POST
 
 ## Cleanup
 rm /private/tmp/$fileName
