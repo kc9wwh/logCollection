@@ -54,7 +54,6 @@ jamfProURL="$4"
 jamfProUser="$5"
 jamfProPass="$6"
 logFiles="$7"
-logFiles_arr=(${(@s:,:)logFiles})
 
 ## System Variables
 mySerial=$( system_profiler SPHardwareDataType | grep Serial |  awk '{print $NF}' )
@@ -65,10 +64,9 @@ osMajor=$(/usr/bin/sw_vers -productVersion | awk -F . '{print $1}')
 osMinor=$(/usr/bin/sw_vers -productVersion | awk -F . '{print $2}')
 
 ## Log Collection
+logFiles_arr=(${(@s:,:)logFiles})
 fileName=$compHostName-$currentUser-$timeStamp.zip
-for f in "${logFiles_arr[@]}";do
-    zip /private/tmp/$fileName $~f
-done
+zip /private/tmp/$fileName ${~logFiles_arr[@]}
 
 ## Upload Log File
 if [[ "$osMajor" -ge 11 ]]; then
