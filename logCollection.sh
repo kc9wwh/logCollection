@@ -75,12 +75,12 @@ zip /private/tmp/$fileName ${~logFiles_arr[@]}
 
 ## Upload Log File
 if [[ "$osMajor" -ge 11 ]]; then
-	jamfProID=$( curl -k -H "Authorization: Bearer ${bearerToken}" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath -e "//computer/general/id/text()" )
+	jamfProID=$( curl -H "Authorization: Bearer ${bearerToken}" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath -e "//computer/general/id/text()" )
 elif [[ "$osMajor" -eq 10 && "$osMinor" -gt 12 ]]; then
-    jamfProID=$( curl -k -H "Authorization: Bearer ${bearerToken}" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath "//computer/general/id/text()" )
+    jamfProID=$( curl -H "Authorization: Bearer ${bearerToken}" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath "//computer/general/id/text()" )
 fi
 
-curl -k -H "Authorization: Bearer ${bearerToken}" $jamfProURL/JSSResource/fileuploads/computers/id/$jamfProID -F name=@/private/tmp/$fileName -X POST
+curl -H "Authorization: Bearer ${bearerToken}" $jamfProURL/JSSResource/fileuploads/computers/id/$jamfProID -F name=@/private/tmp/$fileName -X POST
 
 ## Cleanup
 rm /private/tmp/$fileName
