@@ -83,5 +83,6 @@ fi
 curl -H "Authorization: Bearer ${bearerToken}" $jamfProURL/JSSResource/fileuploads/computers/id/$jamfProID -F name=@/private/tmp/$fileName -X POST
 
 ## Cleanup
+curl -H "Authorization: Bearer ${bearerToken}" $jamfProURL/api/v1/auth/invalidate-token -X POST -s -o /dev/null
 rm /private/tmp/$fileName
 exit 0
