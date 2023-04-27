@@ -46,6 +46,7 @@
 #
 # Revision History
 # 2020-12-01: Added support for macOS Big Sur
+# 2023-04-27: Added Bearer Token Authentication
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -63,18 +64,62 @@ timeStamp=$( date '+%Y-%m-%d-%H-%M-%S' )
 osMajor=$(/usr/bin/sw_vers -productVersion | awk -F . '{print $1}')
 osMinor=$(/usr/bin/sw_vers -productVersion | awk -F . '{print $2}')
 
+if [ $(echo "${jamfProURL: -1}") == "/" ]; then
+	jssURL=$(echo $jamfProURL | sed 's/.$//')
+fi
+####################################################################################################
+# Get API Token
+#Variable declarations
+bearerToken=""
+tokenExpirationEpoch="0"
+
+getBearerToken() {
+	response=$(curl -s -u "$jamfProUser":"$jamfProPass" "$jssURL"/api/v1/auth/token -X POST)
+	bearerToken=$(echo "$response" | awk -F'"' '/token/ {print $4}')
+	tokenExpiration=$(echo "$response" | awk -F'"' '/expires/ {print $4}')
+	tokenExpirationEpoch=$(date -j -f "%Y-%m-%dT%T" "$tokenExpiration" +"%s")
+}
+
+checkTokenExpiration() {
+    nowEpochUTC=$(date -j -f "%Y-%m-%dT%T" "$(date -u +"%Y-%m-%dT%T")" +"%s")
+    if [[ tokenExpirationEpoch -gt nowEpochUTC ]]
+    then
+        echo "Token valid until the following epoch time: " "$tokenExpirationEpoch"
+    else
+        echo "No valid token available, getting new token"
+        getBearerToken
+    fi
+}
+
+invalidateToken() {
+	responseCode=$(curl -w "%{http_code}" -H "Authorization: Bearer ${bearerToken}" $jssURL/api/v1/auth/invalidate-token -X POST -s -o /dev/null)
+	if [[ ${responseCode} == 204 ]]
+	then
+		echo "Token successfully invalidated"
+		bearerToken=""
+		tokenExpirationEpoch="0"
+	elif [[ ${responseCode} == 401 ]]
+	then
+		echo "Token already invalid"
+	else
+		echo "An unknown error occurred invalidating the token"
+	fi
+}
+
+checkTokenExpiration
 ## Log Collection
 fileName=$compHostName-$currentUser-$timeStamp.zip
 zip /private/tmp/$fileName $logFiles
 
 ## Upload Log File
 if [[ "$osMajor" -ge 11 ]]; then
-	jamfProID=$( curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath -e "//computer/general/id/text()" )
-elif [[ "$osMajor" -eq 10 && "$osMinor" -gt 12 ]]; then
-    jamfProID=$( curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath "//computer/general/id/text()" )
-fi
+	jamfProID=$(curl --request GET --url "$jssURL"/JSSResource/computers/serialnumber/"$mySerial" --header 'accept: application/xml' --header "Authorization: Bearer ${bearerToken}" | xmllint --xpath '//computer/general/id/text()' - )
 
-curl -k -u "$jamfProUser":"$jamfProPass" $jamfProURL/JSSResource/fileuploads/computers/id/$jamfProID -F name=@/private/tmp/$fileName -X POST
+elif [[ "$osMajor" -eq 10 && "$osMinor" -gt 12 ]]; then
+	jamfProID=$(curl --request GET --url "$jssURL"/JSSResource/computers/serialnumber/"$mySerial"/subset/general --header 'accept: application/xml' --header "Authorization: Bearer ${bearerToken}" | xmllint --xpath '//computer/general/id/text()' - )
+
+fi
+curl -H "Authorization: Bearer $bearerToken" "$jssURL/JSSResource/fileuploads/computers/id/$jamfProID" -F "name=@/private/tmp/$fileName" -X POST
 
 ## Cleanup
 rm /private/tmp/$fileName
