@@ -42,7 +42,7 @@
 # For more information, visit https://github.com/kc9wwh/logCollection
 #
 # Written by: Joshua Roskos | Jamf
-# Revised by: Alton Brailovskiy | Jamf 
+# Revised by: Alton Brailovskiy | Martin Cox (Jamf) 
 #
 # Revision History
 # 2023-11-30: Added support for bearer auth and invalidating bearer token once done.
