@@ -1,5 +1,5 @@
 #!/bin/bash
-
+​
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #
 # Copyright (c) 2020 Jamf.  All rights reserved.
@@ -27,7 +27,7 @@
 #       SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
+​
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #
 # This script was designed to be used in a Self Service policy to allow the facilitation
@@ -45,58 +45,60 @@
 # Revised by: Alton Brailovskiy | Martin Cox (Jamf) 
 #
 # Revision History
+# 2024-07-23: Updated Script
 # 2023-11-30: Added support for bearer auth and invalidating bearer token once done.
 # 2020-12-01: Added support for macOS Big Sur
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
+​
 ## User Variables
 ## Ensure not to include the / at the end of the JamfProURL parameter. ex https://instance.jamfcloud.com is the parameter NOT https://instance.jamfcloud.com/
-
+## Suggested Logs to pull: /private/var/log/install.log* /private/var/log/jamf.log* /private/var/log/system.log*
+​
 jamfProURL="$4"
 jamfProUser="$5"
 jamfProPass="$6"
 logFiles="$7"
-
+​
 bearerTokenResponse=$(curl -s -u "$jamfProUser":"$jamfProPass" "$jamfProURL/api/v1/auth/token" -X POST)
-
+​
 if [[ $? -eq 0 ]]; then
-    bearerToken=$(echo "$bearerTokenResponse" | plutil -extract token raw -)
-    echo "Bearer token: $bearerToken"
+	bearerToken=$(echo "$bearerTokenResponse" | plutil -extract token raw -)
+    echo "Bearer token: $bearerToken"
 else
-    echo "Authentication failed. Check credentials or endpoint."
+	echo "Authentication failed. Check credentials or endpoint."
 fi
-
+​
 ## System Variables
-mySerial=$( system_profiler SPHardwareDataType | grep Serial |  awk '{print $NF}' )
+mySerial=$(system_profiler SPHardwareDataType | grep 'Serial Number' | awk '{print $NF}')
 currentUser=$( stat -f%Su /dev/console )
 compHostName=$( scutil --get LocalHostName )
 timeStamp=$( date '+%Y-%m-%d-%H-%M-%S' )
 osMajor=$(/usr/bin/sw_vers -productVersion | awk -F . '{print $1}')
 osMinor=$(/usr/bin/sw_vers -productVersion | awk -F . '{print $2}')
-
+​
 ## Log Collection
 fileName=$compHostName-$currentUser-$timeStamp.zip
 zip /private/tmp/$fileName $logFiles
-
+​
 ## Upload Log File
 if [[ "$osMajor" -ge 11 ]]; then
-  jamfProID=$( curl -k -H "Authorization: Bearer ${bearerToken}" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath -e "//computer/general/id/text()" )
+	jamfProID=$( curl -k -H "Authorization: Bearer ${bearerToken}" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath -e "//computer/general/id/text()" )
 elif [[ "$osMajor" -eq 10 && "$osMinor" -gt 12 ]]; then
-    jamfProID=$( curl -k -H "Authorization: Bearer ${bearerToken}" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath "//computer/general/id/text()" )
+	jamfProID=$( curl -k -H "Authorization: Bearer ${bearerToken}" $jamfProURL/JSSResource/computers/serialnumber/$mySerial/subset/general | xpath "//computer/general/id/text()" )
 fi
-
+​
 curl -k -H "Authorization: Bearer ${bearerToken}" $jamfProURL/JSSResource/fileuploads/computers/id/$jamfProID -F name=@/private/tmp/$fileName -X POST
-
+​
 ## Cleanup
 rm /private/tmp/$fileName
-
+​
 # Invalidate the bearer token after file upload
 invalidateResponse=$(curl -s -u "$jamfProUser":"$jamfProPass" "$jamfProURL/api/v1/auth/invalidateToken" -X POST -H "Authorization: Bearer $bearerToken")
-
+​
 if [[ $? -eq 0 ]]; then
-    echo "Bearer token invalidated successfully."
+	echo "Bearer token invalidated successfully."
 else
-    echo "Failed to invalidate bearer token. Response: $invalidateResponse"
+	echo "Failed to invalidate bearer token. Response: $invalidateResponse"
 fi
-
+​
 exit 0
