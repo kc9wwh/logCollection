@@ -45,6 +45,7 @@
 # Revised by: Alton Brailovskiy | Martin Cox (Jamf) 
 #
 # Revision History
+# 2024-08-2024: Updated Token Invalidation + Retry Logic
 # 2024-07-23: Updated Script
 # 2023-11-30: Added support for bearer auth and invalidating bearer token once done.
 # 2020-12-01: Added support for macOS Big Sur
@@ -52,7 +53,6 @@
 ​
 ## User Variables
 ## Ensure not to include the / at the end of the JamfProURL parameter. ex https://instance.jamfcloud.com is the parameter NOT https://instance.jamfcloud.com/
-## Suggested Logs to pull: /private/var/log/install.log* /private/var/log/jamf.log* /private/var/log/system.log*
 ​
 jamfProURL="$4"
 jamfProUser="$5"
@@ -92,13 +92,34 @@ curl -k -H "Authorization: Bearer ${bearerToken}" $jamfProURL/JSSResource/fileup
 ## Cleanup
 rm /private/tmp/$fileName
 ​
-# Invalidate the bearer token after file upload
-invalidateResponse=$(curl -s -u "$jamfProUser":"$jamfProPass" "$jamfProURL/api/v1/auth/invalidateToken" -X POST -H "Authorization: Bearer $bearerToken")
-​
-if [[ $? -eq 0 ]]; then
-	echo "Bearer token invalidated successfully."
-else
-	echo "Failed to invalidate bearer token. Response: $invalidateResponse"
-fi
+# Invalidate the bearer token with retry logic
+while true; do
+    responseCode=$(curl -w "%{http_code}" -H "Authorization: Bearer ${bearerToken}" "$jamfProURL/api/v1/auth/invalidate-token" -X POST -s -o /dev/null)
+    echo "Response Code: $responseCode"
+    
+    if [[ ${responseCode} -eq 204 ]]; then
+        echo "Token successfully invalidated."
+        bearerToken=""
+        echo "Exiting script..."
+        exit 0
+        
+    elif [[ ${responseCode} -eq 401 ]]; then
+        echo "Token already invalid."
+        echo "Exiting script..."
+        exit 0
+        
+    else
+        echo "An unknown error occurred invalidating the token."
+        
+        retryCount=$((retryCount + 1))
+        if [[ ${retryCount} -ge ${maxRetries} ]]; then
+            echo "Maximum retries reached. Exiting script..."
+            exit 1
+        fi
+        
+        echo "Retrying in ${retryInterval} seconds..."
+        sleep ${retryInterval}
+    fi
+done
 ​
 exit 0
