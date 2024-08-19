@@ -51,8 +51,9 @@
 # 2020-12-01: Added support for macOS Big Sur
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 ​
-## User Variables
+​## User Variables
 ## Ensure not to include the / at the end of the JamfProURL parameter. ex https://instance.jamfcloud.com is the parameter NOT https://instance.jamfcloud.com/
+## Suggested Logs to pull: /private/var/log/install.log* /private/var/log/jamf.log* /private/var/log/system.log*
 ​
 jamfProURL="$4"
 jamfProUser="$5"
