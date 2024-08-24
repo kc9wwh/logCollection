@@ -49,7 +49,8 @@
 # 2021-02-24: Fixed missing variables
 #
 # Modified by: July Flanakin | Jamf
-# 2022-06-01: Added Bearer Token Functionality
+# 2022-06-01: Added Jamf Connect log collection functionality
+# 2022-06-02: Added Bearer Token Functionality
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -71,10 +72,16 @@ apiBasicPass=$( printf "$jamfProUser:$jamfProPass" | /usr/bin/iconv -t ISO-8859-
 getToken=$( curl -L -X POST $jamfProURL/api/v1/auth/token --header "Authorization: Basic $apiBasicPass" )
 authToken=$(/usr/bin/plutil -extract token raw -o - - <<< "$getToken")
 
+## Collect Jamf Connect Logs
+log show --style compact --predicate ‘subsystem == “com.jamf.connect”’ --debug > /private/tmp/JamfConnect.log
+log show --style compact --predicate ‘subsystem == “com.jamf.connect.login”’ --debug > /private/tmp/JamfConnectLogin.log
+connectMenu="/private/tmp/JamfConnect.log"
+connectLogin="/private/tmp/JamfConnectLogin.log"
+connectDebug="/private/tmp/jamf_login.log"
 
 ## Log Collection
 fileName=$compHostName-$currentUser-$timeStamp.zip
-zip /private/tmp/$fileName $logFiles
+zip /private/tmp/$fileName $logFiles $connectDebug $connectMenu $connectLogin
 
 ## Upload Log File
 if [[ "$osMajor" -ge 11 ]]; then
@@ -87,4 +94,6 @@ curl -k -L $jamfProURL/JSSResource/fileuploads/computers/id/$jamfProID -F name=@
 
 ## Cleanup
 rm /private/tmp/$fileName
+rm /private/tmp/JamfConnect.log
+rm /private/tmp/JamfConnectLogin.log
 exit 0
