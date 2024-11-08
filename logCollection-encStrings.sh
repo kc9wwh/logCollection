@@ -63,7 +63,7 @@ compHostName=$( scutil --get LocalHostName )
 timeStamp=$( date '+%Y-%m-%d-%H-%M-%S' )
 osMajor=$(/usr/bin/sw_vers -productVersion | awk -F . '{print $1}')
 osMinor=$(/usr/bin/sw_vers -productVersion | awk -F . '{print $2}')
-jamfProPass=$( echo "$6" | /usr/bin/openssl enc -aes256 -d -a -A -S "$8" -k "$9" )
+jamfProPass=$( echo "$6" | /usr/bin/openssl enc -aes256 -md md5 -d -a -A -S "$8" -k "$9" )
 
 ## Log Collection
 fileName=$compHostName-$currentUser-$timeStamp.zip
